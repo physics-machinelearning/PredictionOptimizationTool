@@ -3,6 +3,7 @@ Tool which is capable of reading .csv, predicting target property and optimizing
 
 ## Overview
 This tool is capable of predicting objective variables and optimizing explanatory variables for minimizing or maximizing objective variables
+(Optimization capability has not made yet)
 
 ## How to use
 - Run ```python ui.py```
