@@ -76,9 +76,9 @@ class PredictionView(QWidget):
         super().__init__()
         self.button_ridge = QPushButton('Ridge', self)
         self.button_lasso = QPushButton('Lasso', self)
-        self.button_svr = QPushButton('SVR_test', self)
-
-        self.create_scatter_plot()
+        self.button_svr = QPushButton('SVR', self)
+        self.fclist = []
+        
         self.set_layout()
 
     def set_layout(self):
@@ -88,7 +88,6 @@ class PredictionView(QWidget):
         self.layout_select_est.addWidget(self.button_svr)
 
         self.layout_right = QVBoxLayout()
-        self.layout_right.addWidget(self.FigureScatterCanvas)
 
         self.layout = QHBoxLayout()
         self.layout.addLayout(self.layout_select_est)
@@ -96,16 +95,23 @@ class PredictionView(QWidget):
 
         self.setLayout(self.layout)
 
-    def create_scatter_plot(self):
-        self.FigureScatter = plt.figure()
-        self.FigureScatterCanvas = FigureCanvas(self.FigureScatter)
+    def create_scatter_plot(self, x, y):
+        FigureScatter = plt.figure(figsize=(5, 5))
+        axis = FigureScatter.add_subplot(1,1,1)
+        axis.scatter(x, y)
+        FigureScatterCanvas = FigureCanvas(FigureScatter)
+        FigureScatterCanvas.draw()
+        self.layout_right.addWidget(FigureScatterCanvas)
+        self.fclist.append(FigureScatterCanvas)
 
     def update_scatter_plot(self, x_list, y_list):
+        if len(self.fclist) != 0:
+            for fc in self.fclist:
+                self.layout_right.removeWidget(fc)
+
         n = len(y_list)
-        for i, (x, y) in enumerate(zip(x_list, y_list)):
-            self.axis = self.FigureScatter.add_subplot(math.ceil(n/2),2,i+1, figsize=(5, 5))
-            self.axis.scatter(x, y)
-        self.FigureScatterCanvas.draw()
+        for (x, y) in zip(x_list, y_list):
+            self.create_scatter_plot(x, y)
 
     def predict(self, x, y_list):
         print(self.sender())
