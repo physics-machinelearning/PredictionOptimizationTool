@@ -76,9 +76,14 @@ class PredictionView(QWidget):
         self.button_ridge = QPushButton('Ridge', self)
         self.button_lasso = QPushButton('Lasso', self)
         self.button_svr = QPushButton('SVR', self)
+<<<<<<< HEAD:predictionapp/ui.py
         self.button_download = QPushButton('download', self)
 
         self.create_scatter_plot()
+=======
+        self.fclist = []
+        
+>>>>>>> 666e481aac82b8781e5643b07c68d656cb7c268d:ui.py
         self.set_layout()
 
     def set_layout(self):
@@ -93,7 +98,6 @@ class PredictionView(QWidget):
         self.layout_left.addLayout(self.layout_download_est)
 
         self.layout_right = QVBoxLayout()
-        self.layout_right.addWidget(self.FigureScatterCanvas)
 
         self.layout = QHBoxLayout()
         self.layout.addLayout(self.layout_left)
@@ -101,6 +105,7 @@ class PredictionView(QWidget):
 
         self.setLayout(self.layout)
 
+<<<<<<< HEAD:predictionapp/ui.py
     def create_scatter_plot(self):
         self.FigureScatter = plt.figure(figsize=(20, 10))
         self.FigureScatterCanvas = FigureCanvas(self.FigureScatter)
@@ -116,6 +121,25 @@ class PredictionView(QWidget):
         self.FigureScatterCanvas.draw()
         for axis in axis_list:
             axis.clear()
+=======
+    def create_scatter_plot(self, x, y):
+        FigureScatter = plt.figure(figsize=(5, 5))
+        axis = FigureScatter.add_subplot(1,1,1)
+        axis.scatter(x, y)
+        FigureScatterCanvas = FigureCanvas(FigureScatter)
+        FigureScatterCanvas.draw()
+        self.layout_right.addWidget(FigureScatterCanvas)
+        self.fclist.append(FigureScatterCanvas)
+
+    def update_scatter_plot(self, x_list, y_list):
+        if len(self.fclist) != 0:
+            for fc in self.fclist:
+                self.layout_right.removeWidget(fc)
+
+        n = len(y_list)
+        for (x, y) in zip(x_list, y_list):
+            self.create_scatter_plot(x, y)
+>>>>>>> 666e481aac82b8781e5643b07c68d656cb7c268d:ui.py
 
     def predict(self, x, y_list, y_col):
         button = self.sender()
