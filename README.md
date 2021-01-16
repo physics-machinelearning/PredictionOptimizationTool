@@ -10,5 +10,6 @@ This tool is capable of predicting objective variables and optimizing explanator
 - Read .csv file and select explanatory variables and objective variables
 ![スクリーンショット 2020-02-09 16 53 41](https://user-images.githubusercontent.com/45067993/74098625-ba6d7a00-4b5d-11ea-9343-ca8ba78e40e7.png)
 - Select prediction model
+![スクリーンショット 2021-01-16 9 54 29](https://user-images.githubusercontent.com/45067993/104792257-21b99280-57e1-11eb-8b93-77f967fc358c.png)
 
 - Download models: Pickle file will be downloaded in your current folder. Pickle file is dictionary whose key is objective variable name and value is model. For example, ```{objective_varable_name1: est1, objective_variable_name2: est2}```
