@@ -1,21 +1,20 @@
-import sys
 import os
 
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg\
+    import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5.QtWidgets import (
-    QAction, QApplication, QWidget, QPushButton, QFileDialog, QMainWindow, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QGroupBox, QHBoxLayout, QTabWidget
+    QWidget, QPushButton, QFileDialog, QTableWidget,
+    QTableWidgetItem, QVBoxLayout, QHBoxLayout, QTabWidget
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
 
-from xlsx_parser import ReadExcel
-from model import DataModel
-from prediction import predict_y
+from .xlsx_parser import ReadExcel
+from .model import Config
+from .prediction import predict_y
+
 
 class SelectView(QWidget):
     def __init__(self):
@@ -76,40 +75,49 @@ class PredictionView(QWidget):
         super().__init__()
         self.button_ridge = QPushButton('Ridge', self)
         self.button_lasso = QPushButton('Lasso', self)
-        self.button_svr = QPushButton('SVR_test', self)
+        self.button_svr = QPushButton('SVR', self)
+        self.button_download = QPushButton('download', self)
 
         self.create_scatter_plot()
         self.set_layout()
 
     def set_layout(self):
+        self.layout_left = QVBoxLayout()
         self.layout_select_est = QVBoxLayout()
         self.layout_select_est.addWidget(self.button_ridge)
         self.layout_select_est.addWidget(self.button_lasso)
         self.layout_select_est.addWidget(self.button_svr)
+        self.layout_download_est = QVBoxLayout()
+        self.layout_download_est.addWidget(self.button_download)
+        self.layout_left.addLayout(self.layout_select_est)
+        self.layout_left.addLayout(self.layout_download_est)
 
         self.layout_right = QVBoxLayout()
         self.layout_right.addWidget(self.FigureScatterCanvas)
 
         self.layout = QHBoxLayout()
-        self.layout.addLayout(self.layout_select_est)
+        self.layout.addLayout(self.layout_left)
         self.layout.addLayout(self.layout_right)
 
         self.setLayout(self.layout)
 
     def create_scatter_plot(self):
-        self.FigureScatter = plt.figure()
+        self.FigureScatter = plt.figure(figsize=(20, 10))
         self.FigureScatterCanvas = FigureCanvas(self.FigureScatter)
 
-    def update_scatter_plot(self, x_list, y_list):
+    def update_scatter_plot(self, x_list, y_list, y_col):
         n = len(y_list)
-        for i, (x, y) in enumerate(zip(x_list, y_list)):
-            self.axis = self.FigureScatter.add_subplot(math.ceil(n/2),2,i+1, figsize=(5, 5))
-            self.axis.scatter(x, y)
+        axis_list = []
+        for i, (x, y, col) in enumerate(zip(x_list, y_list, y_col)):
+            axis = self.FigureScatter.add_subplot(math.ceil(n/2), 2, i+1)
+            axis.scatter(x, y)
+            axis.set_title(col)
+            axis_list.append(axis)
         self.FigureScatterCanvas.draw()
+        for axis in axis_list:
+            axis.clear()
 
-    def predict(self, x, y_list):
-        print(self.sender())
-        print(self.button_ridge)
+    def predict(self, x, y_list, y_col):
         button = self.sender()
         if button is self.button_ridge:
             est = 'Ridge'
@@ -117,20 +125,19 @@ class PredictionView(QWidget):
             est = 'Lasso'
         elif button is self.button_svr:
             est = 'SVR'
-        y_test_list_list, y_test_predict_list_list = predict_y(est, x, y_list)
+        y_test_list_list, y_test_predict_list_list, est_dict = predict_y(est, x, y_list, y_col)
 
-        return y_test_list_list, y_test_predict_list_list
-# class OptimizationView(QWidet):
+        return y_test_list_list, y_test_predict_list_list, est_dict
 
 
-class GAView(QWidget):
+class AllView(QWidget):
     def __init__(self):
         super().__init__()
         self.tabs = QTabWidget()
         self.tab1 = SelectView()
         self.tab2 = PredictionView()
         self.tab3 = QWidget()
-        self.datamodel = DataModel()
+        self.config = Config()
         self._data_exchange()
         self._init_ui()
     
@@ -141,9 +148,10 @@ class GAView(QWidget):
         self.tab2.button_ridge.clicked.connect(self._predict_plot)
         self.tab2.button_lasso.clicked.connect(self._predict_plot)
         self.tab2.button_svr.clicked.connect(self._predict_plot)
+        self.tab2.button_download.clicked.connect(self._download)
 
     def _init_ui(self):
-        self.setGeometry(10, 10, 640, 480)
+        self.setGeometry(10, 10, 640, 350)
         self.tabs.addTab(self.tab1, "Select")
         self.tabs.addTab(self.tab2, "Prediction")
         self.tabs.addTab(self.tab3, "Optimization")
@@ -156,22 +164,26 @@ class GAView(QWidget):
 
     def _select_x(self):
         col = np.array(self.tab1.cols)[self.tab1.selected_cols()]
-        self.datamodel.x_col = col
-        self.datamodel.x = self.tab1.xy_df[col]
+        self.config.x_col = col
+        self.config.x = self.tab1.xy_df[col].values
 
     def _select_y(self):
         col = np.array(self.tab1.cols)[self.tab1.selected_cols()]
-        self.datamodel.y_col = col
-        self.datamodel.y = self.tab1.xy_df[col]
-        print(self.datamodel.y)
+        self.config.y_col = col
+        self.config.y = self.tab1.xy_df[col].values
 
     def _predict_plot(self):
-        x = self.datamodel.x.values
-        y_list = self.datamodel.y.values
-        y_test_list_list, y_test_predict_list_list = self.tab2.predict(x, y_list)
-        self.tab2.update_scatter_plot(y_test_list_list, y_test_predict_list_list)
+        x = self.config.x
+        y_list = self.config.y
+        y_test_list_list, y_test_predict_list_list, est_dict =\
+            self.tab2.predict(x, y_list, self.config.y_col)
+        self.config.est_dict = est_dict
+        self.tab2.update_scatter_plot(
+            y_test_list_list, y_test_predict_list_list, self.config.y_col
+            )
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ga_view = GAView()
-    sys.exit(app.exec_())
+    def _download(self):
+        est_dict = self.config.est_dict
+        import pickle
+        with open('est_dict.pickle', 'wb') as f:
+            pickle.dump(est_dict, f)

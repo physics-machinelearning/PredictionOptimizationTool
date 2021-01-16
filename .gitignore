@@ -1,0 +1,6 @@
+__pycache__/
+.vscode/
+
+Pipfile.lock
+auto_learning.log
+est_dict.pickle
